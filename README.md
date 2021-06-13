@@ -53,7 +53,7 @@ if err := service.Consume(exampleQueue, helloConsumption); err != nil {
 
 ## Future plans
 
-* [ ] Unit tests for the exising components
+* [ ] Unit tests for the existing components
 * [ ] Support for more message queue implementations
 
 ---
