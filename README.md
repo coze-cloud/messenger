@@ -1,7 +1,7 @@
 # messenger
 📬 A minimalistic library for abstracting asynchronus messaging
 
-## Adding
+## Installation
 
 Adding *messenger* to your Go module is as easy as calling this command in your project
 
