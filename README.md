@@ -51,4 +51,11 @@ if err := service.Consume(exampleQueue, helloConsumption); err != nil {
 }
 ```
 
+## Future plans
+
+* [ ] Unit tests for the exising components
+* [ ] Support for more message queue implementations
+
+---
+
 Copyright © 2021 - The cozy team **& contributors**
