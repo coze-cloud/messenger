@@ -31,7 +31,7 @@ func (messenger rabbitMessenger) GetAddress() address {
 	return messenger.address
 }
 
-func (messenger *rabbitMessenger) Publish(queue queue, publication publication) error {
+func (messenger *rabbitMessenger) Publish(queue Queue, publication Publication) error {
 	channel, err := messenger.connection.Channel()
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (messenger *rabbitMessenger) Publish(queue queue, publication publication) 
 	return nil
 }
 
-func (messenger *rabbitMessenger) Consume(queue queue, consumption consumption) error {
+func (messenger *rabbitMessenger) Consume(queue Queue, consumption Consumption) error {
 	channel, err := messenger.connection.Channel()
 	if err != nil {
 		return err

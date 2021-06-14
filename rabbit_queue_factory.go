@@ -6,10 +6,10 @@ import (
 
 type rabbitQueueFactory struct {
 	channel *amqp.Channel
-	queue   queue
+	queue   Queue
 }
 
-func NewRabbitQueueFactory(channel *amqp.Channel, queue queue) rabbitQueueFactory {
+func NewRabbitQueueFactory(channel *amqp.Channel, queue Queue) rabbitQueueFactory {
 	producer := new(rabbitQueueFactory)
 	producer.channel = channel
 	producer.queue = queue

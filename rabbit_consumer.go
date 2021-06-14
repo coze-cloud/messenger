@@ -7,10 +7,10 @@ import (
 type rabbitConsumer struct {
 	receiver    address
 	channel     *amqp.Channel
-	consumption consumption
+	consumption Consumption
 }
 
-func newRabbitConsumer(receiver address, channel *amqp.Channel, consumption consumption) rabbitConsumer {
+func newRabbitConsumer(receiver address, channel *amqp.Channel, consumption Consumption) rabbitConsumer {
 	consumer := new(rabbitConsumer)
 	consumer.receiver = receiver
 	consumer.channel = channel

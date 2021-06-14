@@ -8,10 +8,10 @@ import (
 type rabbitPublisher struct {
 	sender      address
 	channel     *amqp.Channel
-	publication publication
+	publication Publication
 }
 
-func newRabbitPublisher(sender address, channel *amqp.Channel, publication publication) rabbitPublisher {
+func newRabbitPublisher(sender address, channel *amqp.Channel, publication Publication) rabbitPublisher {
 	publisher := new(rabbitPublisher)
 	publisher.sender = sender
 	publisher.channel = channel

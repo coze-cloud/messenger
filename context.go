@@ -5,5 +5,5 @@ type Context interface {
 
 	Acknowledge() error
 	NegativeAcknowledge(requeue bool) error
-	Publish(queue queue, publication publication) error
+	Publish(queue Queue, publication Publication) error
 }

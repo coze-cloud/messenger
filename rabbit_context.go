@@ -50,7 +50,7 @@ func (context rabbitHandlerContext) NegativeAcknowledge(requeue bool) error {
 	return context.delivery.Nack(false, requeue)
 }
 
-func (context rabbitHandlerContext) Publish(queue queue, publication publication) error {
+func (context rabbitHandlerContext) Publish(queue Queue, publication Publication) error {
 	rabbitQueue, err := NewRabbitQueueFactory(context.channel, queue).Produce()
 	if err != nil {
 		return err

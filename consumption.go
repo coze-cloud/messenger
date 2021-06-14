@@ -2,7 +2,7 @@ package messenger
 
 import "github.com/mcuadros/go-defaults"
 
-type consumption struct {
+type Consumption struct {
 	Handler           handler
 	Name              string `default:""`
 	IsAutoAcknowledge bool `default:"false"`
@@ -11,35 +11,35 @@ type consumption struct {
 	IsNoWait          bool `default:"false"`
 }
 
-func NewConsumption(handler handler) consumption {
-	consumption := new(consumption)
+func NewConsumption(handler handler) Consumption {
+	consumption := new(Consumption)
 	defaults.SetDefaults(consumption)
 	consumption.Handler = handler
 
 	return *consumption
 }
 
-func (consumption consumption) Named(name string) consumption {
+func (consumption Consumption) Named(name string) Consumption {
 	consumption.Name = name
 	return consumption
 }
 
-func (consumption consumption) AutoAcknowledge() consumption {
+func (consumption Consumption) AutoAcknowledge() Consumption {
 	consumption.IsAutoAcknowledge = true
 	return consumption
 }
 
-func (consumption consumption) Exclusive() consumption {
+func (consumption Consumption) Exclusive() Consumption {
 	consumption.IsExclusive = true
 	return consumption
 }
 
-func (consumption consumption) NoLocal() consumption {
+func (consumption Consumption) NoLocal() Consumption {
 	consumption.IsNoLocal = true
 	return consumption
 }
 
-func (consumption consumption) NoWait() consumption {
+func (consumption Consumption) NoWait() Consumption {
 	consumption.IsNoWait = true
 	return consumption
 }
