@@ -24,9 +24,9 @@ func (consumer rabbitConsumer) Consume(queue amqp.Queue) error {
 		queue.Name,
 		consumer.consumption.Name,
 		consumer.consumption.IsAutoAcknowledge,
-		consumer.consumption.IsExclusive,
-		consumer.consumption.IsNoLocal,
-		consumer.consumption.IsNoWait,
+		false,
+		false,
+		false,
 		nil,
 	)
 	if err != nil {

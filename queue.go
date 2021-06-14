@@ -2,14 +2,13 @@ package messenger
 
 import (
 	"github.com/mcuadros/go-defaults"
+	"time"
 )
 
 type Queue struct {
-	Name                 string `default:"default"`
-	IsDurable            bool   `default:"false"`
-	ShouldDeleteIfUnused bool   `default:"false"`
-	IsExclusive          bool   `default:"false"`
-	IsNoWait             bool   `default:"false"`
+	Name             string `default:"default"`
+	ShouldAutoDelete bool
+	TimeToLive       int64
 }
 
 func NewQueue() Queue {
@@ -24,22 +23,12 @@ func (queue Queue) Named(name string) Queue {
 	return queue
 }
 
-func (queue Queue) Durable() Queue {
-	queue.IsDurable = true
+func (queue Queue) AutoDelete() Queue {
+	queue.ShouldAutoDelete = true
 	return queue
 }
 
-func (queue Queue) DeleteIfUnused() Queue {
-	queue.ShouldDeleteIfUnused = true
-	return queue
-}
-
-func (queue Queue) Exclusive() Queue {
-	queue.IsExclusive = true
-	return queue
-}
-
-func (queue Queue) NoWait() Queue {
-	queue.IsNoWait = true
+func (queue Queue) WithTimeToLive(duration time.Duration) Queue {
+	queue.TimeToLive = duration.Milliseconds()
 	return queue
 }

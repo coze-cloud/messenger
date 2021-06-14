@@ -37,7 +37,7 @@ func (messenger *rabbitMessenger) Publish(queue Queue, publication Publication) 
 		return err
 	}
 
-	rabbitQueue, err := NewRabbitQueueFactory(channel, queue).Produce()
+	rabbitQueue, err := newRabbitQueueFactory(channel, queue).Produce()
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (messenger *rabbitMessenger) Consume(queue Queue, consumption Consumption) 
 		return err
 	}
 
-	rabbitQueue, err := NewRabbitQueueFactory(channel, queue).Produce()
+	rabbitQueue, err := newRabbitQueueFactory(channel, queue).Produce()
 	if err != nil {
 		return err
 	}

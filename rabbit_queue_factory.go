@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"github.com/streadway/amqp"
+	"strconv"
 )
 
 type rabbitQueueFactory struct {
@@ -9,7 +10,7 @@ type rabbitQueueFactory struct {
 	queue   Queue
 }
 
-func NewRabbitQueueFactory(channel *amqp.Channel, queue Queue) rabbitQueueFactory {
+func newRabbitQueueFactory(channel *amqp.Channel, queue Queue) rabbitQueueFactory {
 	producer := new(rabbitQueueFactory)
 	producer.channel = channel
 	producer.queue = queue
@@ -18,12 +19,17 @@ func NewRabbitQueueFactory(channel *amqp.Channel, queue Queue) rabbitQueueFactor
 }
 
 func (factory rabbitQueueFactory) Produce() (amqp.Queue, error) {
+	args := make(map[string]interface{})
+	if factory.queue.TimeToLive > 0 {
+		args["x-message-ttl"] = strconv.FormatInt(factory.queue.TimeToLive, 10)
+	}
+
 	return factory.channel.QueueDeclare(
 		factory.queue.Name,
-		factory.queue.IsDurable,
-		factory.queue.ShouldDeleteIfUnused,
-		factory.queue.IsExclusive,
-		factory.queue.IsNoWait,
-		nil,
+		false,
+		factory.queue.ShouldAutoDelete,
+		false,
+		false,
+		args,
 	)
 }
