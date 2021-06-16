@@ -22,6 +22,12 @@ if err != nil {
 }
 ```
 
+### Define an exchange
+
+```go
+defaultExchange := messenger.NewExchange()
+```
+
 ### Define a queue
 
 ```go
@@ -34,7 +40,7 @@ exampleQueue := messenger.NewQueue().Named("example")
 helloMessage := messenger.NewMessage("Hello World")
 helloPublication := messenger.NewPublication(helloMessage)
 
-if err := service.Publish(exampleQueue, helloPublication); err != nil {
+if err := service.Publish(defaultExchange, exampleQueue, helloPublication); err != nil {
     log.Fatal(err)
 }
 ```
@@ -46,7 +52,7 @@ helloConsumption := messenger.NewConsumption(func(ctx m.Context) {
     log.Println(ctx.GetMessage().Body)
 }).AutoAcknowledge()
 
-if err := service.Consume(exampleQueue, helloConsumption); err != nil {
+if err := service.Consume(defaultExchange, exampleQueue, helloConsumption); err != nil {
     log.Fatal(err)
 }
 ```
