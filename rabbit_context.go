@@ -26,17 +26,17 @@ func newRabbitHandlerContext(receiver address, channel *amqp.Channel, delivery a
 
 func (context rabbitHandlerContext) GetMessage() Message {
 	message := Message{}
-	_ =  json.Unmarshal(context.delivery.Body, &message)
+	_ =  json.Unmarshal(context.delivery.Body, &message.Body)
 
 	series := uuid.UUID{}
-	_ = json.Unmarshal([]byte(context.delivery.Headers["Series"].(string)), &series)
+	_ = json.Unmarshal(context.delivery.Headers["Series"].([]uint8), &series)
 	message.Series = series
-	message.Revision = context.delivery.Headers["Revision"].(int)
+	message.Revision = int(context.delivery.Headers["Revision"].(int32))
 	from := address{}
-	_ = json.Unmarshal([]byte(context.delivery.Headers["From"].(string)), &from)
+	_ = json.Unmarshal(context.delivery.Headers["From"].([]uint8), &from)
 	message.From = from
 	timeStamp := time.Time{}
-	_ = json.Unmarshal([]byte(context.delivery.Headers["TimeStamp"].(string)), &timeStamp)
+	_ = json.Unmarshal(context.delivery.Headers["TimeStamp"].([]uint8), &timeStamp)
 	message.TimeStamp = timeStamp
 
 	return message.ReceivedFrom(context.receiver)
@@ -50,10 +50,6 @@ func (context rabbitHandlerContext) NegativeAcknowledge(requeue bool) error {
 	return context.delivery.Nack(false, requeue)
 }
 
-func (context rabbitHandlerContext) Publish(queue Queue, publication Publication) error {
-	rabbitQueue, err := newRabbitQueueFactory(context.channel, queue).Produce()
-	if err != nil {
-		return err
-	}
-	return newRabbitPublisher(context.receiver, context.channel, publication).Publish(rabbitQueue)
+func (context rabbitHandlerContext) Publish(exchange Exchange, queue Queue, publication Publication) error {
+	return newRabbitPublisher(context.receiver, context.channel, publication).Publish(exchange, queue)
 }

@@ -1,7 +1,9 @@
 package messenger
 
 import (
+	"fmt"
 	"github.com/streadway/amqp"
+	"strings"
 )
 
 type rabbitConsumer struct {
@@ -19,10 +21,15 @@ func newRabbitConsumer(receiver address, channel *amqp.Channel, consumption Cons
 	return *consumer
 }
 
-func (consumer rabbitConsumer) Consume(queue amqp.Queue) error {
+func (consumer rabbitConsumer) Consume(exchange Exchange, queue Queue) error {
+	name := consumer.receiver.String()
+	if len(strings.TrimSpace(consumer.consumption.Name)) > 0 {
+		name = fmt.Sprintf("%s@%s", consumer.consumption.Name, name)
+	}
+
 	deliveries, err := consumer.channel.Consume(
 		queue.Name,
-		consumer.consumption.Name,
+		name,
 		consumer.consumption.IsAutoAcknowledge,
 		false,
 		false,

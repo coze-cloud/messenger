@@ -31,19 +31,26 @@ func (messenger rabbitMessenger) GetAddress() address {
 	return messenger.address
 }
 
-func (messenger *rabbitMessenger) Publish(queue Queue, publication Publication) error {
+func (messenger *rabbitMessenger) Publish(exchange Exchange, queue Queue, publication Publication) error {
 	channel, err := messenger.connection.Channel()
 	if err != nil {
 		return err
 	}
 
-	rabbitQueue, err := newRabbitQueueFactory(channel, queue).Produce()
-	if err != nil {
+	if err = newRabbitExchangeFactory(channel, exchange).Produce(); err != nil {
 		return err
 	}
 
-	err = newRabbitPublisher(messenger.address, channel, publication).Publish(rabbitQueue)
-	if err != nil {
+	if _, err = newRabbitQueueFactory(channel, queue).Produce(); err != nil {
+		return err
+	}
+
+	if err = newRabbitQueueBinder(channel, exchange, queue).Bind(); err != nil {
+		return err
+	}
+
+	if err = newRabbitPublisher(messenger.address, channel, publication).
+		Publish(exchange, queue); err != nil {
 		return err
 	}
 
@@ -53,19 +60,26 @@ func (messenger *rabbitMessenger) Publish(queue Queue, publication Publication) 
 	return nil
 }
 
-func (messenger *rabbitMessenger) Consume(queue Queue, consumption Consumption) error {
+func (messenger *rabbitMessenger) Consume(exchange Exchange, queue Queue, consumption Consumption) error {
 	channel, err := messenger.connection.Channel()
 	if err != nil {
 		return err
 	}
 
-	rabbitQueue, err := newRabbitQueueFactory(channel, queue).Produce()
-	if err != nil {
+	if err = newRabbitExchangeFactory(channel, exchange).Produce(); err != nil {
 		return err
 	}
 
-	err = newRabbitConsumer(messenger.address, channel, consumption).Consume(rabbitQueue)
-	if err != nil {
+	if _, err = newRabbitQueueFactory(channel, queue).Produce(); err != nil {
+		return err
+	}
+
+	if err = newRabbitQueueBinder(channel, exchange, queue).Bind(); err != nil {
+		return err
+	}
+
+	if err = newRabbitConsumer(messenger.address, channel, consumption).
+		Consume(exchange, queue); err != nil {
 		return err
 	}
 

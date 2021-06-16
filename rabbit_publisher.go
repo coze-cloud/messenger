@@ -20,12 +20,8 @@ func newRabbitPublisher(sender address, channel *amqp.Channel, publication Publi
 	return *publisher
 }
 
-func (publisher rabbitPublisher) Publish(queue amqp.Queue) error {
-	message := publisher.publication.Message.SendFrom(publisher.sender)
-	body, err := json.Marshal(message.Body)
-	if err != nil {
-		return err
-	}
+func (publisher rabbitPublisher) Publish(exchange Exchange, queue Queue) error {
+	message := publisher.publication.Message.SentFrom(publisher.sender)
 
 	series, err := json.Marshal(message.Series)
 	if err != nil {
@@ -40,11 +36,16 @@ func (publisher rabbitPublisher) Publish(queue amqp.Queue) error {
 		return err
 	}
 
+	body, err := json.Marshal(message.Body)
+	if err != nil {
+		return err
+	}
+
 	return publisher.channel.Publish(
-		publisher.publication.Exchange,
-		queue.Name,
-		publisher.publication.IsMandatory,
-		publisher.publication.IsImmediate,
+		exchange.Name,
+		queue.Topic,
+		false,
+		false,
 		amqp.Publishing{
 			Headers: map[string]interface{}{
 				"Series": series,
