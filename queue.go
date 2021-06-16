@@ -6,8 +6,9 @@ import (
 )
 
 type Queue struct {
-	Name             string `default:"default"`
-	ShouldAutoDelete bool
+	Name             string
+	Topic            string
+	ShouldAutoRemove bool	`defaults:"true"`
 	TimeToLive       int64
 }
 
@@ -20,11 +21,18 @@ func NewQueue() Queue {
 
 func (queue Queue) Named(name string) Queue {
 	queue.Name = name
+	queue.Topic = name
+	queue.ShouldAutoRemove = false
 	return queue
 }
 
-func (queue Queue) AutoDelete() Queue {
-	queue.ShouldAutoDelete = true
+func (queue Queue) WithTopic(topic string) Queue {
+	queue.Topic = topic
+	return queue
+}
+
+func (queue Queue) AutoRemove() Queue {
+	queue.ShouldAutoRemove = true
 	return queue
 }
 

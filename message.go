@@ -33,7 +33,7 @@ func (message Message) OfType(messageType string) Message {
 	return message
 }
 
-func (message Message) SendFrom(from address) Message {
+func (message Message) SentFrom(from address) Message {
 	message.From = from
 	return message
 }

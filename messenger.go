@@ -3,6 +3,6 @@ package messenger
 type Messenger interface {
 	GetAddress() address
 
-	Publish(queue Queue, publication Publication) error
-	Consume(queue Queue, consumption Consumption) error
+	Publish(exchange Exchange, queue Queue, publication Publication) error
+	Consume(exchange Exchange, queue Queue, consumption Consumption) error
 }
