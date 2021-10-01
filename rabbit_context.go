@@ -32,6 +32,7 @@ func (context rabbitHandlerContext) GetMessage() Message {
 	_ = json.Unmarshal(context.delivery.Headers["Series"].([]uint8), &series)
 	message.Series = series
 	message.Revision = int(context.delivery.Headers["Revision"].(int32))
+	message.Type = context.delivery.Headers["Type"].(string)
 	from := address{}
 	_ = json.Unmarshal(context.delivery.Headers["From"].([]uint8), &from)
 	message.From = from

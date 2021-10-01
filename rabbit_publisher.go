@@ -3,6 +3,7 @@ package messenger
 import (
 	"encoding/json"
 	"github.com/streadway/amqp"
+	"reflect"
 )
 
 type rabbitPublisher struct {
@@ -26,6 +27,9 @@ func (publisher rabbitPublisher) Publish(exchange Exchange, queue Queue) error {
 	series, err := json.Marshal(message.Series)
 	if err != nil {
 		return err
+	}
+	if len(message.Type) == 0 {
+		message.Type = reflect.TypeOf(message.Body).Name()
 	}
 	from, err := json.Marshal(message.From)
 	if err != nil {
@@ -52,6 +56,7 @@ func (publisher rabbitPublisher) Publish(exchange Exchange, queue Queue) error {
 				"Revision": message.Revision,
 				"From": from,
 				"TimeStamp": timeStamp,
+				"Type": message.Type,
 			},
 			ContentType: "text/json",
 			Body:        body,

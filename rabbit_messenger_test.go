@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 		block.Done()
 	})
 
-	_ = service.Consume(defaultExchange, helloReplyQueue, helloReplyConsumption)
+	_, _ = service.Consume(defaultExchange, helloReplyQueue, helloReplyConsumption)
 
 	helloConsumption := NewConsumption(func(ctx Context) {
 		log.Println(ctx.GetMessage())
@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 		_ = ctx.Publish(defaultExchange, NewQueue().WithTopic("reply"), NewPublication(reply))
 	}).Named("helloConsumer").AutoAcknowledge()
 
-	_ = service.Consume(defaultExchange, helloQueue, helloConsumption)
+	_, _ = service.Consume(defaultExchange, helloQueue, helloConsumption)
 
 	block.Wait()
 }
