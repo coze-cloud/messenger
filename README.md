@@ -20,6 +20,10 @@ service, err := messenger.NewRabbitMessenger("amqp://guest:guest@localhost:5672/
 if err != nil {
     log.Fatal(err)
 }
+
+defer service.Close(func(err error) {
+    log.Fatal(err)
+})
 ```
 
 ### Define an exchange

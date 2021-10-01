@@ -85,3 +85,10 @@ func (messenger *rabbitMessenger) Consume(exchange Exchange, queue Queue, consum
 
 	return nil
 }
+
+func (messenger rabbitMessenger) Close(errorHandler func(err error)) {
+	err := messenger.connection.Close()
+	if err != nil && errorHandler != nil {
+		errorHandler(err)
+	}
+}
