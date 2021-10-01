@@ -10,7 +10,7 @@ import (
 )
 
 type Message struct {
-	Id string `bson:"_id"`
+	Id 		  string `bson:"_id"`
 	Series    uuid.UUID
 	Revision  int
 	From      address

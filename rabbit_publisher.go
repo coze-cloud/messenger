@@ -48,6 +48,7 @@ func (publisher rabbitPublisher) Publish(exchange Exchange, queue Queue) error {
 		false,
 		amqp.Publishing{
 			Headers: map[string]interface{}{
+				"Id": message.Id,
 				"Series": series,
 				"Revision": message.Revision,
 				"From": from,
