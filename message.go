@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	uuid "github.com/satori/go.uuid"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type Message struct {
+	Id string `bson:"_id"`
 	Series    uuid.UUID
 	Revision  int
 	From      address
@@ -22,6 +24,7 @@ type Message struct {
 func NewMessage(body interface{}) Message {
 	message := new(Message)
 	message.Series = uuid.NewV4()
+	message.Id = message.Series.String() + "." + strconv.Itoa(message.Revision)
 	message.TimeStamp = time.Now().UTC()
 	message.Body = body
 
@@ -47,6 +50,7 @@ func (message Message) Reply(body interface{}) Message {
 	reply := NewMessage(body)
 	reply.Series = message.Series
 	reply.Revision = message.Revision + 1
+	reply.Id = reply.Series.String() + "." + strconv.Itoa(reply.Revision)
 	reply.Body = body
 	return reply
 }
