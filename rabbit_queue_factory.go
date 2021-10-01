@@ -26,6 +26,7 @@ func (factory rabbitQueueFactory) Produce() (amqp.Queue, error) {
 	return factory.channel.QueueDeclare(
 		factory.queue.Name,
 		false,
+		// Also auto-remove queue if auto-generated one
 		factory.queue.ShouldAutoRemove || len(factory.queue.Name) == 0,
 		false,
 		false,
