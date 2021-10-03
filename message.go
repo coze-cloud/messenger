@@ -19,6 +19,8 @@ type Message struct {
 	body interface{}
 }
 
+// BEGIN: Constructor
+
 func NewMessage(body interface{}) Message {
 	message := new(Message)
 	message.series = uuid.NewV4()
@@ -31,7 +33,11 @@ func NewMessage(body interface{}) Message {
 	return *message
 }
 
-func (message Message) Reply(body interface{}) Message {
+// END: Constructor
+
+// BEGIN: Methods
+
+func (message Message) ReplyTo(body interface{}) Message {
 	message.revision++
 
 	message.timeStamp = time.Now().UTC()
@@ -42,14 +48,16 @@ func (message Message) Reply(body interface{}) Message {
 	return message
 }
 
-func (message Message) FromSender(from *address) Message {
+func (message Message) SendFrom(from *address) Message {
 	message.from = from
 
 	return message
 }
 
-func (message Message) ToReceiver(to *address) Message {
+func (message Message) ReceivedBy(to *address) Message {
 	message.to = to
 
 	return message
 }
+
+// END: Methods

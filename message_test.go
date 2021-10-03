@@ -28,15 +28,15 @@ func TestNewMessage(t *testing.T) {
 	assert.Equal(t, message.bodyType, bodyType)
 }
 
-func TestMessage_Reply(t *testing.T) {
+func TestMessage_ReplyTo(t *testing.T) {
 	// Arrange
 	message := NewMessage("Hello World")
 
-	replyBody := "Hello Reply"
+	replyBody := "Hello ReplyTo"
 	replyBodyType := reflect.TypeOf(replyBody).Name()
 
 	// Act
-	replyMessage := message.Reply(replyBody)
+	replyMessage := message.ReplyTo(replyBody)
 
 	// Assert
 	assert.Equal(t, replyMessage.series, replyMessage.series)
@@ -48,25 +48,25 @@ func TestMessage_Reply(t *testing.T) {
 	assert.Equal(t, replyMessage.bodyType, replyBodyType)
 }
 
-func TestMessage_FromSender(t *testing.T) {
+func TestMessage_SendFrom(t *testing.T) {
 	// Arrange
 	message := NewMessage("Hello World")
 	from := &address{}
 
 	// Act
-	result := message.FromSender(from)
+	result := message.SendFrom(from)
 
 	// Assert
 	assert.Equal(t, result.from, from)
 }
 
-func TestMessage_ToReceiver(t *testing.T) {
+func TestMessage_ReceivedBy(t *testing.T) {
 	// Arrange
 	message := NewMessage("Hello World")
 	to := &address{}
 
 	// Act
-	result := message.ToReceiver(to)
+	result := message.ReceivedBy(to)
 
 	// Assert
 	assert.Equal(t, result.to, to)
