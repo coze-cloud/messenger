@@ -7,57 +7,53 @@ import (
 )
 
 type Message struct {
-	series uuid.UUID
-	revision int
+	Series   uuid.UUID `json:"series"`
+	Revision int       `json:"revision"`
 
-	from *address
-	to *address
+	From *address `json:"from"`
+	To   *address `json:"to"`
 
-	timeStamp time.Time
+	TimeStamp time.Time `json:"time_stamp"`
 
-	bodyType string
-	body interface{}
+	BodyType string      `json:"body_type"`
+	Body     interface{} `json:"body"`
 }
 
 // BEGIN: Constructor
 
 func NewMessage(body interface{}) Message {
-	message := new(Message)
-	message.series = uuid.NewV4()
-
-	message.timeStamp = time.Now().UTC()
-
-	message.body = body
-	message.bodyType = reflect.TypeOf(body).Name()
-
-	return *message
+	return Message{
+		Series:    uuid.NewV4(),
+		TimeStamp: time.Now().UTC(),
+		BodyType:  reflect.TypeOf(body).Name(),
+		Body:      body,
+	}
 }
 
 // END: Constructor
 
 // BEGIN: Methods
 
-func (message Message) ReplyTo(body interface{}) Message {
-	message.revision++
+func (m Message) ReplyTo(body interface{}) Message {
+	m.Revision++
 
-	message.timeStamp = time.Now().UTC()
+	m.TimeStamp = time.Now().UTC()
 
-	message.body = body
-	message.bodyType = reflect.TypeOf(body).Name()
+	m.Body = body
+	m.BodyType = reflect.TypeOf(body).Name()
 
-	return message
+	return m
 }
 
-func (message Message) SendFrom(from *address) Message {
-	message.from = from
-
-	return message
+func (m Message) SendFrom(from *address) Message {
+	m.From = from
+	return m
 }
 
-func (message Message) ReceivedBy(to *address) Message {
-	message.to = to
+func (m Message) ReceivedBy(to *address) Message {
+	m.To = to
 
-	return message
+	return m
 }
 
 // END: Methods

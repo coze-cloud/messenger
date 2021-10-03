@@ -16,16 +16,16 @@ func TestNewMessage(t *testing.T) {
 	message := NewMessage(body)
 
 	// Assert
-	assert.NotNil(t, message.series)
-	assert.Equal(t, message.revision, 0)
+	assert.NotNil(t, message.Series)
+	assert.Equal(t, message.Revision, 0)
 
-	assert.Nil(t, message.from)
-	assert.Nil(t, message.to)
+	assert.Nil(t, message.From)
+	assert.Nil(t, message.To)
 
-	assert.True(t, time.Now().UTC().After(message.timeStamp))
+	assert.True(t, time.Now().UTC().After(message.TimeStamp))
 
-	assert.Equal(t, message.body, body)
-	assert.Equal(t, message.bodyType, bodyType)
+	assert.Equal(t, message.Body, body)
+	assert.Equal(t, message.BodyType, bodyType)
 }
 
 func TestMessage_ReplyTo(t *testing.T) {
@@ -36,16 +36,17 @@ func TestMessage_ReplyTo(t *testing.T) {
 	replyBodyType := reflect.TypeOf(replyBody).Name()
 
 	// Act
+	time.Sleep(1 * time.Millisecond)
 	replyMessage := message.ReplyTo(replyBody)
 
 	// Assert
-	assert.Equal(t, replyMessage.series, replyMessage.series)
-	assert.Equal(t, replyMessage.revision, message.revision + 1)
+	assert.Equal(t, replyMessage.Series, replyMessage.Series)
+	assert.Equal(t, replyMessage.Revision, message.Revision + 1)
 
-	assert.True(t, replyMessage.timeStamp.After(message.timeStamp))
+	assert.True(t, replyMessage.TimeStamp.After(message.TimeStamp))
 
-	assert.Equal(t, replyMessage.body, replyBody)
-	assert.Equal(t, replyMessage.bodyType, replyBodyType)
+	assert.Equal(t, replyMessage.Body, replyBody)
+	assert.Equal(t, replyMessage.BodyType, replyBodyType)
 }
 
 func TestMessage_SendFrom(t *testing.T) {
@@ -57,7 +58,7 @@ func TestMessage_SendFrom(t *testing.T) {
 	result := message.SendFrom(from)
 
 	// Assert
-	assert.Equal(t, result.from, from)
+	assert.Equal(t, result.From, from)
 }
 
 func TestMessage_ReceivedBy(t *testing.T) {
@@ -69,5 +70,5 @@ func TestMessage_ReceivedBy(t *testing.T) {
 	result := message.ReceivedBy(to)
 
 	// Assert
-	assert.Equal(t, result.to, to)
+	assert.Equal(t, result.To, to)
 }
