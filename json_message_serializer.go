@@ -20,15 +20,15 @@ func (j jsonMessageSerializer) Serialize() (string, error) {
 
 // ---
 
-type jsonDeserializer struct {
+type jsonMessageDeserializer struct {
 	message string
 }
 
-func newJsonDeserializer(message string) *jsonDeserializer {
-	return &jsonDeserializer{message: message}
+func newJsonMessageDeserializer(message string) *jsonMessageDeserializer {
+	return &jsonMessageDeserializer{message: message}
 }
 
-func (j jsonDeserializer) Deserialize() (Message, error) {
+func (j jsonMessageDeserializer) Deserialize() (Message, error) {
 	message := Message{}
 	err := json.Unmarshal([]byte(j.message), &message)
 	if err != nil {
