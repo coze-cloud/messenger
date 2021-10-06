@@ -1,11 +1,20 @@
 package messenger
 
-type address struct {
+import (
+	uuid "github.com/satori/go.uuid"
+	"os"
+)
 
+type address struct {
+	id uuid.UUID
+	name string
 }
 
 func newAddress() *address {
-	address := new(address)
+	name, _ := os.Hostname()
 
-	return address
+	return &address{
+		id: uuid.NewV4(),
+		name: name,
+	}
 }
