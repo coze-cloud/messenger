@@ -1,10 +1,8 @@
 package messenger
 
 type Messenger interface {
-	GetAddress() address
+	Publish(exchange Exchange, queue Queue, message Message) error
+	Consume(exchange Exchange, queue Queue, consumer Consumer) (func() error, error)
 
-	Publish(exchange Exchange, queue Queue, publication Publication) error
-	Consume(exchange Exchange, queue Queue, consumption Consumption) (func() error, error)
-
-	Close(func (err error))
+	Close(func(err error))
 }

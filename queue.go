@@ -1,42 +1,40 @@
 package messenger
 
-import (
-	"github.com/mcuadros/go-defaults"
-	"time"
-)
+import "time"
 
 type Queue struct {
-	Name             string
-	Topic            string
-	ShouldAutoRemove bool	`defaults:"true"`
-	TimeToLive       int64
+	name string
+	topic string
+	autoRemove bool
+	timeToLive uint64
 }
 
 func NewQueue() Queue {
-	queue := new(Queue)
-	defaults.SetDefaults(queue)
-
-	return *queue
+	return Queue{autoRemove: true}
 }
 
-func (queue Queue) Named(name string) Queue {
-	queue.Name = name
-	queue.Topic = name
-	queue.ShouldAutoRemove = false
-	return queue
+func (q Queue) Named(name string) Queue {
+	q.name = name
+	q.topic = name
+	q.autoRemove = false
+
+	return q
 }
 
-func (queue Queue) WithTopic(topic string) Queue {
-	queue.Topic = topic
-	return queue
+func (q Queue) WithTopic(topic string) Queue {
+	q.topic = topic
+
+	return q
 }
 
-func (queue Queue) AutoRemove() Queue {
-	queue.ShouldAutoRemove = true
-	return queue
+func (q Queue) ShouldAutoRemove() Queue {
+	q.autoRemove = true
+
+	return q
 }
 
-func (queue Queue) WithTimeToLive(duration time.Duration) Queue {
-	queue.TimeToLive = duration.Milliseconds()
-	return queue
+func (q Queue) WithTimeToLive(duration time.Duration) Queue {
+	q.timeToLive = uint64(duration.Milliseconds())
+
+	return q
 }

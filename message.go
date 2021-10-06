@@ -4,51 +4,59 @@ import (
 	"encoding/json"
 	"fmt"
 	uuid "github.com/satori/go.uuid"
+	"reflect"
 	"strings"
 	"time"
 )
 
 type Message struct {
-	Series    uuid.UUID
-	Revision  int
-	From      address
-	To        address
-	TimeStamp time.Time
+	Series   uuid.UUID `json:"series"`
+	Revision int       `json:"revision"`
 
-	Type   string
-	Body   interface{}
+	From *address `json:"from"`
+	To   *address `json:"to"`
+
+	TimeStamp time.Time `json:"time_stamp"`
+
+	BodyType string      `json:"body_type"`
+	Body     interface{} `json:"body"`
 }
+
+// BEGIN: Constructor
 
 func NewMessage(body interface{}) Message {
-	message := new(Message)
-	message.Series = uuid.NewV4()
-	message.TimeStamp = time.Now().UTC()
-	message.Body = body
-
-	return *message
+	return Message{
+		Series:    uuid.NewV4(),
+		TimeStamp: time.Now().UTC(),
+		BodyType:  reflect.TypeOf(body).Name(),
+		Body:      body,
+	}
 }
 
-func (message Message) OfType(messageType string) Message {
-	message.Type = messageType
-	return message
+// END: Constructor
+
+// BEGIN: Methods
+
+func (m Message) ReplyTo(body interface{}) Message {
+	m.Revision++
+
+	m.TimeStamp = time.Now().UTC()
+
+	m.Body = body
+	m.BodyType = reflect.TypeOf(body).Name()
+
+	return m
 }
 
-func (message Message) SentFrom(from address) Message {
-	message.From = from
-	return message
+func (m Message) SendFrom(from *address) Message {
+	m.From = from
+	return m
 }
 
-func (message Message) ReceivedFrom(from address) Message {
-	message.To = from
-	return message
-}
+func (m Message) ReceivedBy(to *address) Message {
+	m.To = to
 
-func (message Message) Reply(body interface{}) Message {
-	reply := NewMessage(body)
-	reply.Series = message.Series
-	reply.Revision = message.Revision + 1
-	reply.Body = body
-	return reply
+	return m
 }
 
 func (message Message) String() string {
@@ -58,10 +66,12 @@ func (message Message) String() string {
 	return fmt.Sprintf("%s.%d(%s) @ %s, %s -> %s, %s",
 		strings.Split(message.Series.String(), "-")[0],
 		message.Revision,
-		message.Type,
+		message.BodyType,
 		timeStamp,
 		message.From,
 		message.To,
 		body,
 	)
 }
+
+// END: Methods

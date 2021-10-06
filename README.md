@@ -11,19 +11,18 @@ go get github.com/cozy-hosting/messenger
 
 ## Usage
 
-Being a minimalistic library, *messenger* only provides the basiscs. The rest is up to your specific need.
+Being a minimalistic library, *messenger* only provides the basics. The rest is up to your specific need.
 
 ### Create a messenger
 
 ```go
-service, err := messenger.NewRabbitMessenger("amqp://guest:guest@localhost:5672/")
-if err != nil {
-    log.Fatal(err)
-}
-
+msgr, err := messenger.NewRabbitMessenger("amqp://guest:guest@localhost:5672/")
 defer service.Close(func(err error) {
     log.Fatal(err)
 })
+if err != nil {
+    log.Fatal(err)
+}
 ```
 
 ### Define an exchange
@@ -42,9 +41,8 @@ exampleQueue := messenger.NewQueue().Named("example")
 
 ```go
 helloMessage := messenger.NewMessage("Hello World")
-helloPublication := messenger.NewPublication(helloMessage)
 
-if err := service.Publish(defaultExchange, exampleQueue, helloPublication); err != nil {
+if err := msgr.Publish(defaultExchange, exampleQueue, helloMessage); err != nil {
     log.Fatal(err)
 }
 ```
@@ -53,17 +51,24 @@ if err := service.Publish(defaultExchange, exampleQueue, helloPublication); err 
 
 ```go
 helloConsumption := messenger.NewConsumption(func(ctx m.Context) {
-    log.Println(ctx.GetMessage().Body)
+    message, err := ctx.GetDelivery().GetMessage()
+    if err != err {
+        log.Fatal(err)
+    }   
+    
+    log.Println(message)
 }).AutoAcknowledge()
 
-if err := service.Consume(defaultExchange, exampleQueue, helloConsumption); err != nil {
+free, err := msgr.Consume(defaultExchange, exampleQueue, helloConsumption)
+defer free()
+if err != nil {
     log.Fatal(err)
 }
 ```
 
 ## Future plans
 
-* [ ] Unit tests for the existing components
+* [x] Unit tests for the existing components
 * [ ] Support for more message queue implementations
 
 ---

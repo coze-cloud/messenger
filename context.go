@@ -1,9 +1,7 @@
 package messenger
 
 type Context interface {
-	GetMessage() Message
+	GetDelivery() Delivery
 
-	Acknowledge() error
-	NegativeAcknowledge(requeue bool) error
-	Publish(exchange Exchange, queue Queue, publication Publication) error
+	Publish(message Message) error
 }

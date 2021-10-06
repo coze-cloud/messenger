@@ -1,31 +1,29 @@
 package messenger
 
-import "github.com/mcuadros/go-defaults"
-
 type Exchange struct {
-	Name             string
-	Strategy         string `default:"direct"`
-	ShouldAutoRemove bool
+	name string
+	strategy string
+	autoRemove bool
 }
 
 func NewExchange() Exchange {
-	exchange := new(Exchange)
-	defaults.SetDefaults(exchange)
-
-	return *exchange
+	return Exchange{strategy: "direct"}
 }
 
-func (exchange Exchange) Named(name string) Exchange {
-	exchange.Name = name
-	return exchange
+func (e Exchange) Named(name string) Exchange {
+	e.name = name
+
+	return e
 }
 
-func (exchange Exchange) WithStrategy(strategy string) Exchange {
-	exchange.Strategy = strategy
-	return exchange
+func (e Exchange) WithStrategy(strategy string) Exchange {
+	e.strategy = strategy
+
+	return e
 }
 
-func (exchange Exchange) AutoRemove() Exchange {
-	exchange.ShouldAutoRemove = true
-	return exchange
+func (e Exchange) ShouldAutoRemove() Exchange {
+	e.autoRemove = true
+
+	return e
 }

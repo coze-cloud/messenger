@@ -1,46 +1,123 @@
 package messenger
 
 import (
-	"log"
-	"sync"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"testing"
-	"time"
 )
 
-func TestMain(m *testing.M) {
-	service, _ := NewRabbitMessenger("amqp://guest:guest@localhost:5672/")
-	defer service.Close(func(err error) {
-		log.Fatal(err)
-	})
+type mockConnection struct {
+	mock.Mock
+}
 
-	defaultExchange := NewExchange().Named("test")
-	helloQueue := NewQueue().Named("hello").WithTimeToLive(10 * time.Second)
+func (c *mockConnection) GetChannel() (Channel, error) {
+	args := c.Called()
+	return args.Get(0).(Channel), args.Error(1)
+}
 
-	helloMessage := NewMessage("Hello World")
-	helloPublication := NewPublication(helloMessage)
+func (c *mockConnection) Close() error {
+	args := c.Called()
+	return args.Error(0)
+}
 
-	_ = service.Publish(defaultExchange, helloQueue, helloPublication)
+func (c *mockChannel) DeleteQueue(queue Queue) error {
+	args := c.Called(queue)
+	return args.Error(0)
+}
 
-	block := sync.WaitGroup{}
-	block.Add(2)
+func (c *mockChannel) Publish(exchange Exchange, queue Queue, message Message) error {
+	args := c.Called(exchange, queue, message)
+	return args.Error(0)
+}
 
-	helloReplyQueue := NewQueue().WithTopic("reply")
-	helloReplyConsumption := NewConsumption(func(ctx Context) {
-		log.Println(ctx.GetMessage())
-		block.Done()
-	})
+func (c *mockChannel) Consume(exchange Exchange, queue Queue, consumer Consumer) error {
+	args := c.Called(exchange, queue, consumer)
+	return args.Error(0)
+}
 
-	_, _ = service.Consume(defaultExchange, helloReplyQueue, helloReplyConsumption)
+func (c *mockChannel) Close() error {
+	args := c.Called()
+	return args.Error(0)
+}
 
-	helloConsumption := NewConsumption(func(ctx Context) {
-		log.Println(ctx.GetMessage())
-		block.Done()
+func TestRabbitMessenger_Publish(t *testing.T) {
+	// Arrange
+	exchange := NewExchange()
 
-		reply := ctx.GetMessage().Reply("Hello as well")
-		_ = ctx.Publish(defaultExchange, NewQueue().WithTopic("reply"), NewPublication(reply))
-	}).Named("helloConsumer").AutoAcknowledge()
+	queue := NewQueue()
+	args := make(map[string]interface{})
 
-	_, _ = service.Consume(defaultExchange, helloQueue, helloConsumption)
+	address := newAddress()
+	message := NewMessage("Hello World")
 
-	block.Wait()
+	channel := &mockChannel{}
+	channel.On("DeclareQueue", queue, args).
+		Return(nil)
+	channel.On("Publish", exchange, queue, message.SendFrom(address)).
+		Return(nil).
+		Once()
+	channel.On("DeleteQueue", queue).
+		Return(nil).
+		Once()
+	channel.On("Close").
+		Return(nil).
+		Once()
+
+	connection := &mockConnection{}
+	connection.On("GetChannel").
+		Return(channel, nil).
+		Once()
+
+	messenger := rabbitMessenger{
+		address: address,
+		connection: connection,
+	}
+
+	// Act
+	err := messenger.Publish(exchange, queue, message)
+
+	// Assert
+	assert.NoError(t, err)
+	channel.AssertExpectations(t)
+	connection.AssertExpectations(t)
+}
+
+func TestRabbitMessenger_Consume(t *testing.T) {
+	// Arrange
+	exchange := NewExchange()
+
+	queue := NewQueue()
+	args := make(map[string]interface{})
+
+	address := newAddress()
+	consumer := NewConsumer(nil)
+
+	channel := &mockChannel{}
+	channel.On("DeclareQueue", queue, args).
+		Return(nil)
+	channel.On("Consume", exchange, queue, consumer.locatedAt(address)).
+		Return( nil).
+		Once()
+	channel.On("Close").
+		Return(nil).
+		Once()
+
+	connection := &mockConnection{}
+	connection.On("GetChannel").
+		Return(channel, nil).
+		Once()
+
+	messenger := rabbitMessenger{
+		address: address,
+		connection: connection,
+	}
+
+	// Act
+	free, err := messenger.Consume(exchange, queue, consumer)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NoError(t, free())
+	channel.AssertExpectations(t)
+	connection.AssertExpectations(t)
 }

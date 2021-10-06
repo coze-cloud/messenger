@@ -1,105 +1,80 @@
 package messenger
 
-import (
-	"github.com/mcuadros/go-defaults"
-	"github.com/streadway/amqp"
-)
-
 type rabbitMessenger struct {
-	Messenger // Interface
-
-	connection *amqp.Connection
-	address    address
+	address *address
+	connection Connection
 }
 
 func NewRabbitMessenger(url string) (Messenger, error) {
-	messenger := new(rabbitMessenger)
-	defaults.SetDefaults(messenger)
-	messenger.address = newRandomAddress()
-
-	var err error
-
-	messenger.connection, err = amqp.Dial(url)
+	connection, err := newRabbitConnection(url)
 	if err != nil {
 		return nil, err
 	}
 
-	return messenger, nil
+	return &rabbitMessenger{
+		address: newAddress(),
+		connection: connection,
+	}, nil
 }
 
-func (messenger rabbitMessenger) GetAddress() address {
-	return messenger.address
-}
-
-func (messenger *rabbitMessenger) Publish(exchange Exchange, queue Queue, publication Publication) error {
-	channel, err := messenger.connection.Channel()
+func (m rabbitMessenger) Publish(exchange Exchange, queue Queue, message Message) error {
+	channel, err := m.prepare(exchange, queue)
+	defer func(channel Channel) {
+		_ = channel.Close()
+	}(channel)
 	if err != nil {
 		return err
 	}
 
-	if err = newRabbitExchangeFactory(channel, exchange).Produce(); err != nil {
+	if err := channel.Publish(exchange, queue, message.SendFrom(m.address)); err != nil {
 		return err
 	}
 
-	if _, err = newRabbitQueueFactory(channel, queue).Produce(); err != nil {
-		return err
-	}
-
-	if err = newRabbitQueueBinder(channel, exchange, queue).Bind(); err != nil {
-		return err
-	}
-
-	if err = newRabbitPublisher(messenger.address, channel, publication).
-		Publish(exchange, queue); err != nil {
-		return err
-	}
-
-	// Delete queue if it is an auto-generated one
-	if len(queue.Name) == 0 {
-		if _, err := channel.QueueDelete(queue.Name, true, false, false); err != nil {
+	if queue.autoRemove {
+		if err := channel.DeleteQueue(queue); err != nil {
 			return err
 		}
 	}
 
-	if err := channel.Close(); err != nil {
-		return err
-	}
 	return nil
 }
 
-func (messenger *rabbitMessenger) Consume(exchange Exchange,  queue Queue, consumption Consumption) (func() error, error) {
-	channel, err := messenger.connection.Channel()
-	channelClose := func() error {
-		return channel.Close()
-	}
-
+func (m rabbitMessenger) Consume(exchange Exchange, queue Queue, consumer Consumer) (func() error, error) {
+	channel, err := m.prepare(exchange, queue)
 	if err != nil {
-		return channelClose, err
+		return channel.Close, err
 	}
 
-	if err = newRabbitExchangeFactory(channel, exchange).Produce(); err != nil {
-		return channelClose, err
+	if err := channel.Consume(exchange, queue, consumer.locatedAt(m.address)); err != nil {
+		return channel.Close, err
 	}
 
-	if _, err = newRabbitQueueFactory(channel, queue).Produce(); err != nil {
-		return channelClose, err
-	}
-
-	if err = newRabbitQueueBinder(channel, exchange, queue).Bind(); err != nil {
-		return channelClose, err
-	}
-
-	if err = newRabbitConsumer(messenger.address, channel, consumption).
-		Consume(exchange, queue); err != nil {
-		return channelClose, err
-	}
-
-	return channelClose, nil
+	return channel.Close, nil
 }
 
-func (messenger rabbitMessenger) Close(errorHandler func(err error)) {
-	err := messenger.connection.Close()
-	if err != nil && errorHandler != nil {
-		errorHandler(err)
+func (m rabbitMessenger) prepare(exchange Exchange, queue Queue) (Channel, error) {
+	channel, err := m.connection.GetChannel()
+	if err != nil {
+		return channel, err
+	}
+
+	var commands []Command
+
+	commands = append(commands, newCreateRabbitExchangeCommand(channel, exchange))
+	commands = append(commands, newCreateRabbitQueueCommand(channel, queue))
+	commands = append(commands, newBindRabbitQueueExchangeCommand(channel, exchange, queue))
+
+	for _, command := range commands {
+		if err := command.Handle(); err != nil {
+			return nil, err
+		}
+	}
+
+	return channel, nil
+}
+
+func (m rabbitMessenger) Close(handler func (err error)) {
+	if err := m.connection.Close(); handler != nil && err != nil {
+		handler(err)
 	}
 }
