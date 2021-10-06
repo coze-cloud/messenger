@@ -17,8 +17,8 @@ func TestNewAddress(t *testing.T) {
 	address := newAddress()
 
 	// Assert
-	assert.False(t, uuid.Equal(uuid.UUID{}, address.id))
-	assert.Equal(t, name, address.name)
+	assert.False(t, uuid.Equal(uuid.UUID{}, address.Id))
+	assert.Equal(t, name, address.Name)
 }
 
 func TestAddress_String(t *testing.T) {
@@ -26,8 +26,8 @@ func TestAddress_String(t *testing.T) {
 	address := newAddress()
 
 	expected := fmt.Sprintf("%s(%s)",
-		strings.Split(address.id.String(), "-")[0],
-		address.name,
+		strings.Split(address.Id.String(), "-")[0],
+		address.Name,
 	)
 
 	// Act

@@ -20,13 +20,18 @@ func (c *mockConnection) Close() error {
 	return args.Error(0)
 }
 
+func (c *mockChannel) DeleteQueue(queue Queue) error {
+	args := c.Called(queue)
+	return args.Error(0)
+}
+
 func (c *mockChannel) Publish(exchange Exchange, queue Queue, message Message) error {
 	args := c.Called(exchange, queue, message)
 	return args.Error(0)
 }
 
-func (c *mockChannel) Consume(queue Queue, consumer Consumer) error {
-	args := c.Called(queue, consumer)
+func (c *mockChannel) Consume(exchange Exchange, queue Queue, consumer Consumer) error {
+	args := c.Called(exchange, queue, consumer)
 	return args.Error(0)
 }
 
@@ -49,6 +54,9 @@ func TestRabbitMessenger_Publish(t *testing.T) {
 	channel.On("DeclareQueue", queue, args).
 		Return(nil)
 	channel.On("Publish", exchange, queue, message.SendFrom(address)).
+		Return(nil).
+		Once()
+	channel.On("DeleteQueue", queue).
 		Return(nil).
 		Once()
 	channel.On("Close").
@@ -87,7 +95,7 @@ func TestRabbitMessenger_Consume(t *testing.T) {
 	channel := &mockChannel{}
 	channel.On("DeclareQueue", queue, args).
 		Return(nil)
-	channel.On("Consume", queue, consumer.locatedAt(address)).
+	channel.On("Consume", exchange, queue, consumer.locatedAt(address)).
 		Return( nil).
 		Once()
 	channel.On("Close").

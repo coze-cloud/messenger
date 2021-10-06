@@ -1,8 +1,11 @@
 package messenger
 
 import (
+	"encoding/json"
+	"fmt"
 	uuid "github.com/satori/go.uuid"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -54,6 +57,21 @@ func (m Message) ReceivedBy(to *address) Message {
 	m.To = to
 
 	return m
+}
+
+func (message Message) String() string {
+	timeStamp := message.TimeStamp.Format(time.RFC3339)
+	body, _ := json.Marshal(message.Body)
+
+	return fmt.Sprintf("%s.%d(%s) @ %s, %s -> %s, %s",
+		strings.Split(message.Series.String(), "-")[0],
+		message.Revision,
+		message.BodyType,
+		timeStamp,
+		message.From,
+		message.To,
+		body,
+	)
 }
 
 // END: Methods

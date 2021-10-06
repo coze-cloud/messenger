@@ -9,7 +9,7 @@ type Channel interface {
 	BindQueueToExchange(exchange Exchange, queue Queue) error
 
 	Publish(exchange Exchange, queue Queue, message Message) error
-	Consume(queue Queue, consumer Consumer) error
+	Consume(exchange Exchange, queue Queue, consumer Consumer) error
 
 	Close() error
 }

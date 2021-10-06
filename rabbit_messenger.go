@@ -30,6 +30,12 @@ func (m rabbitMessenger) Publish(exchange Exchange, queue Queue, message Message
 		return err
 	}
 
+	if queue.autoRemove {
+		if err := channel.DeleteQueue(queue); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -39,7 +45,7 @@ func (m rabbitMessenger) Consume(exchange Exchange, queue Queue, consumer Consum
 		return channel.Close, err
 	}
 
-	if err := channel.Consume(queue, consumer.locatedAt(m.address)); err != nil {
+	if err := channel.Consume(exchange, queue, consumer.locatedAt(m.address)); err != nil {
 		return channel.Close, err
 	}
 
@@ -65,4 +71,10 @@ func (m rabbitMessenger) prepare(exchange Exchange, queue Queue) (Channel, error
 	}
 
 	return channel, nil
+}
+
+func (m rabbitMessenger) Close(handler func (err error)) {
+	if err := m.connection.Close(); handler != nil && err != nil {
+		handler(err)
+	}
 }

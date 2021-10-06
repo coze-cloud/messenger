@@ -74,7 +74,7 @@ func (c rabbitChannel) Publish(exchange Exchange, queue Queue, message Message) 
 	)
 }
 
-func (c rabbitChannel) Consume(queue Queue, consumer Consumer) error {
+func (c rabbitChannel) Consume(exchange Exchange, queue Queue, consumer Consumer) error {
 	deliveries, err := c.channel.Consume(
 		queue.name,
 		consumer.name,
@@ -89,8 +89,14 @@ func (c rabbitChannel) Consume(queue Queue, consumer Consumer) error {
 	}
 
 	go func() {
-		for range deliveries {
-			var context Context // TODO: Construct context
+		for rabbitDelivery := range deliveries {
+			if consumer.handler == nil {
+				continue
+			}
+
+			delivery := newRabbitDelivery(consumer.address, &rabbitDelivery)
+			context := newRabbitContext(c, exchange, queue, delivery)
+
 			consumer.handler(context)
 		}
 	}()
