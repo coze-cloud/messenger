@@ -24,7 +24,7 @@ func TestConsumer_Name(t *testing.T) {
 	name := "ExampleConsumer"
 
 	// Act
-	consumer := NewConsumer(nil).Name(name)
+	consumer := NewConsumer(nil).Named(name)
 
 	// Assert
 	assert.Equal(t, name, consumer.name)
