@@ -52,11 +52,11 @@ if err := msgr.Publish(defaultExchange, exampleQueue, helloMessage); err != nil 
 ```go
 helloConsumption := messenger.NewConsumption(func(ctx m.Context) {
     message, err := ctx.GetDelivery().GetMessage()
-	
-	if err != err {
-		log.Fatal(err)
-	}   
-	log.Println(message)
+    if err != err {
+        log.Fatal(err)
+    }   
+    
+    log.Println(message)
 }).AutoAcknowledge()
 
 free, err := msgr.Consume(defaultExchange, exampleQueue, helloConsumption)
