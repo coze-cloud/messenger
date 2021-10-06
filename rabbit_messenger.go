@@ -2,44 +2,61 @@ package messenger
 
 type rabbitMessenger struct {
 	address *address
+	connection Connection
 }
 
-func NewRabbitMessenger() Messenger {
-	return &rabbitMessenger{address: newAddress()}
+func NewRabbitMessenger(url string) (Messenger, error) {
+	connection, err := newRabbitConnection(url)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rabbitMessenger{
+		address: newAddress(),
+		connection: connection,
+	}, nil
 }
 
-func (r rabbitMessenger) Publish(exchange Exchange, queue Queue, message Message) error {
-	channel, err := r.prepare(exchange, queue)
+func (m rabbitMessenger) Publish(exchange Exchange, queue Queue, message Message) error {
+	channel, err := m.prepare(exchange, queue)
+	defer func(channel Channel) {
+		_ = channel.Close()
+	}(channel)
 	if err != nil {
 		return err
 	}
 
-	if err := channel.Publish(exchange, queue, message); err != nil {
+	if err := channel.Publish(exchange, queue, message.SendFrom(m.address)); err != nil {
 		return err
 	}
 
-	return channel.Close()
+	return nil
 }
 
-func (r rabbitMessenger) Consume(exchange Exchange, queue Queue, consumer Consumer) (func() error, error) {
-	channel, err := r.prepare(exchange, queue)
+func (m rabbitMessenger) Consume(exchange Exchange, queue Queue, consumer Consumer) (func() error, error) {
+	channel, err := m.prepare(exchange, queue)
 	if err != nil {
 		return channel.Close, err
 	}
 
-	if err := channel.Consume(queue, consumer); err != nil {
+	if err := channel.Consume(queue, consumer.locatedAt(m.address)); err != nil {
 		return channel.Close, err
 	}
 
 	return channel.Close, nil
 }
 
-func (r rabbitMessenger) prepare(exchange Exchange, queue Queue) (Channel, error) {
+func (m rabbitMessenger) prepare(exchange Exchange, queue Queue) (Channel, error) {
+	channel, err := m.connection.GetChannel()
+	if err != nil {
+		return channel, err
+	}
+
 	var commands []Command
 
-	commands = append(commands, newCreateRabbitExchangeCommand(nil, exchange))
-	commands = append(commands, newCreateRabbitQueueCommand(nil, queue))
-	commands = append(commands, newBindRabbitQueueExchangeCommand(nil, exchange, queue))
+	commands = append(commands, newCreateRabbitExchangeCommand(channel, exchange))
+	commands = append(commands, newCreateRabbitQueueCommand(channel, queue))
+	commands = append(commands, newBindRabbitQueueExchangeCommand(channel, exchange, queue))
 
 	for _, command := range commands {
 		if err := command.Handle(); err != nil {
@@ -47,5 +64,5 @@ func (r rabbitMessenger) prepare(exchange Exchange, queue Queue) (Channel, error
 		}
 	}
 
-	return nil, nil // TODO: Return actual channel
+	return channel, nil
 }
