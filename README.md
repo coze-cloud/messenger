@@ -11,7 +11,7 @@ go get github.com/cozy-hosting/messenger
 
 ## Usage
 
-Being a minimalistic library, *messenger* only provides the basiscs. The rest is up to your specific need.
+Being a minimalistic library, *messenger* only provides the basics. The rest is up to your specific need.
 
 ### Create a messenger
 
