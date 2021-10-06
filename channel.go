@@ -10,4 +10,6 @@ type Channel interface {
 
 	Publish(exchange Exchange, queue Queue, message Message) error
 	Consume(queue Queue, consumer Consumer) error
+
+	Close() error
 }

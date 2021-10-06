@@ -97,3 +97,7 @@ func (c rabbitChannel) Consume(queue Queue, consumer Consumer) error {
 
 	return nil
 }
+
+func (c rabbitChannel) Close() error {
+	return c.channel.Close()
+}

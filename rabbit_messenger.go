@@ -14,16 +14,24 @@ func (r rabbitMessenger) Publish(exchange Exchange, queue Queue, message Message
 		return err
 	}
 
-	return nil
-}
-
-func (r rabbitMessenger) Consume(exchange Exchange, queue Queue, consumer Consumer) error {
-	channel, err := r.prepare(exchange, queue)
-	if err != nil {
+	if err := channel.Publish(exchange, queue, message); err != nil {
 		return err
 	}
 
-	return nil
+	return channel.Close()
+}
+
+func (r rabbitMessenger) Consume(exchange Exchange, queue Queue, consumer Consumer) (func() error, error) {
+	channel, err := r.prepare(exchange, queue)
+	if err != nil {
+		return channel.Close, err
+	}
+
+	if err := channel.Consume(queue, consumer); err != nil {
+		return channel.Close, err
+	}
+
+	return channel.Close, nil
 }
 
 func (r rabbitMessenger) prepare(exchange Exchange, queue Queue) (Channel, error) {
