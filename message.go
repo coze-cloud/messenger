@@ -28,7 +28,7 @@ func NewMessage(body interface{}) Message {
 	return Message{
 		Series:    uuid.NewV4(),
 		TimeStamp: time.Now().UTC(),
-		BodyType:  reflect.TypeOf(body).Name(),
+		BodyType:  reflect.TypeOf(body).String(),
 		Body:      body,
 	}
 }

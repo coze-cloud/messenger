@@ -10,7 +10,7 @@ import (
 func TestNewMessage(t *testing.T) {
 	// Arrange
 	body := "Hello World"
-	bodyType := reflect.TypeOf(body).Name()
+	bodyType := reflect.TypeOf(body).String()
 
 	// Act
 	message := NewMessage(body)
@@ -33,7 +33,7 @@ func TestMessage_ReplyTo(t *testing.T) {
 	message := NewMessage("Hello World")
 
 	replyBody := "Hello ReplyTo"
-	replyBodyType := reflect.TypeOf(replyBody).Name()
+	replyBodyType := reflect.TypeOf(replyBody).String()
 
 	// Act
 	time.Sleep(1 * time.Millisecond)
