@@ -1,0 +1,16 @@
+{
+	"name": "messenger",
+	"build": {
+		"dockerfile": "Dockerfile",
+	},
+	"settings": {
+		"go.useLanguageServer": true,
+		"go.gopath": "/go",
+		"go.goroot": "/usr/local/go"
+	},
+	"extensions": [
+		"github.vscode-pull-request-github",
+		"github.copilot",
+		"golang.go"
+	],
+}
