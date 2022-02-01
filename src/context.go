@@ -1,7 +1,13 @@
 package messenger
 
-type Context interface {
-	GetDelivery() Delivery
+type Context struct {
+	Queue   *Queue
+	Message Message
+}
 
-	Publish(message Message) error
+func NewContext(queue *Queue, message Message) *Context {
+	return &Context{
+		Queue:   queue,
+		Message: message,
+	}
 }

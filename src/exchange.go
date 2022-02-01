@@ -1,29 +1,39 @@
 package messenger
 
 type Exchange struct {
-	name string
-	strategy string
-	autoRemove bool
+	Name   string
+	Queues []*Queue
 }
 
-func NewExchange() Exchange {
-	return Exchange{strategy: "direct"}
+func NewExchange(name string) *Exchange {
+	return &Exchange{
+		Name:   name,
+		Queues: make([]*Queue, 0),
+	}
 }
 
-func (e Exchange) Named(name string) Exchange {
-	e.name = name
-
-	return e
+func (e *Exchange) BindQueue(queue *Queue) {
+	e.Queues = append(e.Queues, queue)
 }
 
-func (e Exchange) WithStrategy(strategy string) Exchange {
-	e.strategy = strategy
-
-	return e
+func (e *Exchange) UnbindQueue(queue *Queue) {
+	for i, q := range e.Queues {
+		if q == queue {
+			e.Queues = append(e.Queues[:i], e.Queues[i+1:]...)
+			return
+		}
+	}
 }
 
-func (e Exchange) ShouldAutoRemove() Exchange {
-	e.autoRemove = true
+func (e *Exchange) SendMessage(message *Message) {
+	for _, q := range e.Queues {
+		q.SendMessage(message)
+	}
+}
 
-	return e
+func (e *Exchange) Close() {
+	for _, q := range e.Queues {
+		q.Close()
+		e.UnbindQueue(q)
+	}
 }

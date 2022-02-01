@@ -1,40 +1,26 @@
 package messenger
 
-import "time"
-
 type Queue struct {
-	name string
-	topic string
-	autoRemove bool
-	timeToLive uint64
+	Name     string
+	messages chan *Message
 }
 
-func NewQueue() Queue {
-	return Queue{autoRemove: true}
+func NewQueue(name string) *Queue {
+	queue := &Queue{
+		Name:     name,
+		messages: make(chan *Message),
+	}
+	return queue
 }
 
-func (q Queue) Named(name string) Queue {
-	q.name = name
-	q.topic = name
-	q.autoRemove = false
-
-	return q
+func (q *Queue) SendMessage(message *Message) {
+	q.messages <- message
 }
 
-func (q Queue) WithTopic(topic string) Queue {
-	q.topic = topic
-
-	return q
+func (q *Queue) ReceiveMessage() *Message {
+	return <-q.messages
 }
 
-func (q Queue) ShouldAutoRemove() Queue {
-	q.autoRemove = true
-
-	return q
-}
-
-func (q Queue) WithTimeToLive(duration time.Duration) Queue {
-	q.timeToLive = uint64(duration.Milliseconds())
-
-	return q
+func (q *Queue) Close() {
+	close(q.messages)
 }
