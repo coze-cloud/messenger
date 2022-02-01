@@ -13,6 +13,7 @@ type roundrobinBalancer struct {
 
 func NewRoundrobinBalancer(items []interface{}) *roundrobinBalancer {
 	return &roundrobinBalancer{
+		next:  len(items) - 1,
 		items: items,
 	}
 }

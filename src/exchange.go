@@ -30,10 +30,3 @@ func (e *Exchange) SendMessage(message *Message) {
 		q.SendMessage(message)
 	}
 }
-
-func (e *Exchange) Close() {
-	for _, q := range e.Queues {
-		q.Close()
-		e.UnbindQueue(q)
-	}
-}
