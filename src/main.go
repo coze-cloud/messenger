@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/cozy-hosting/messenger/src/local"
@@ -10,51 +9,34 @@ import (
 
 func main() {
 	messenger := local.NewLocalMessenger()
+	defer messenger.Stop()
 	go func() {
 		panic(<-messenger.Errors())
 	}()
 
-	wg := &sync.WaitGroup{}
-
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		for {
-			message := <-messenger.Receive("test", "foo1")
+			message := <-messenger.Receive("test", "foo")
 			fmt.Println("1: " + string(message))
-			if string(message) == "quit" {
-				return
-			}
 		}
 	}()
 
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		for {
-			message := <-messenger.Receive("test", "foo2")
+			message := <-messenger.Receive("test", "foo")
 			fmt.Println("2: " + string(message))
-			if string(message) == "quit" {
-				return
-			}
 		}
 	}()
 
 	go func() {
-		defer wg.Done()
 		for {
-			message := <-messenger.Receive("test", "foo2")
+			message := <-messenger.Receive("test", "foo")
 			fmt.Println("3: " + string(message))
-			if string(message) == "quit" {
-				return
-			}
 		}
 	}()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		messenger.Send("test") <- []byte(fmt.Sprintf("%d", i))
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
-	messenger.Send("test") <- []byte("quit")
-	wg.Wait()
 }
