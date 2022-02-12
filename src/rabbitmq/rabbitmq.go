@@ -17,8 +17,7 @@ type rabbitmqMessenger struct {
 	doneSender     chan struct{}
 	doneReveciever chan struct{}
 
-	address     string
-	connenction *amqp.Connection
+	address string
 }
 
 func NewRabbitMesseger(address string) *rabbitmqMessenger {
@@ -30,8 +29,7 @@ func NewRabbitMesseger(address string) *rabbitmqMessenger {
 		doneSender:     make(chan struct{}),
 		doneReveciever: make(chan struct{}),
 
-		address:     address,
-		connenction: nil,
+		address: address,
 	}
 }
 
@@ -156,7 +154,9 @@ func (m *rabbitmqMessenger) newReceiver(exchange string, name string) (chan []by
 			select {
 			case message := <-messages:
 				receiver <- message.Body
-				message.Ack(false)
+				if err := message.Ack(false); err != nil {
+					m.errors <- err
+				}
 			case <-m.doneReveciever:
 				return
 			}
