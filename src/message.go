@@ -26,10 +26,11 @@ func NewMessage(body interface{}) Message {
 }
 
 func (m Message) Reply(body interface{}) Message {
-	m.Revision++
-	m.TimeStamp = time.Now().UTC()
-	m.Type = reflect.TypeOf(body).Name()
-	m.Body = body
-
-	return m
+	return Message{
+		Series:    m.Series,
+		Revision:  m.Revision + 1,
+		TimeStamp: time.Now().UTC(),
+		Type:      reflect.TypeOf(body).String(),
+		Body:      body,
+	}
 }
