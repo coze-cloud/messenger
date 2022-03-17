@@ -1,15 +1,10 @@
 package messenger
 
 import (
-	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/mitchellh/mapstructure"
-)
-
-var (
-	UnexpectedMessageType = errors.New("unexpected message type")
-	BodyCanNotBeDecoded   = errors.New("unable to decode message body")
 )
 
 type Handler[T any] func(handleable T) error
@@ -17,10 +12,10 @@ type Handler[T any] func(handleable T) error
 func Handle[T any](message Message, handler Handler[T]) error {
 	var handleable T
 	if message.Type != reflect.TypeOf(handleable).String() {
-		return UnexpectedMessageType
+		return fmt.Errorf("unexpected message type: %s", message.Type)
 	}
 	if err := mapstructure.Decode(message.Body, &handleable); err != nil {
-		return BodyCanNotBeDecoded
+		return fmt.Errorf("unable to decode message body: %s", err)
 	}
 	return handler(handleable)
 }
