@@ -7,9 +7,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type Handler[T any] interface {
-	Handle(handleable T) error
-}
+type Handler[T any] func(handleable T) error
 
 func Handle[T any](message Message, handler Handler[T]) error {
 	var handleable T
@@ -19,5 +17,5 @@ func Handle[T any](message Message, handler Handler[T]) error {
 	if err := mapstructure.Decode(message.Body, &handleable); err != nil {
 		return fmt.Errorf("unable to decode message body: %s", err)
 	}
-	return handler.Handle(handleable)
+	return handler(handleable)
 }
