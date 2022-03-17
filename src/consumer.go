@@ -2,7 +2,9 @@ package messenger
 
 import "context"
 
-func Consume(ctx context.Context, receiver <-chan []byte, consumer func(message Message)) {
+type Consumer func(message Message)
+
+func Consume(ctx context.Context, receiver <-chan []byte, consumer Consumer) {
 	go func() {
 		for {
 			select {
