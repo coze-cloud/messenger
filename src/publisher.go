@@ -1,6 +1,7 @@
 package messenger
 
-func Publish(sender chan<- []byte, message Message) error {
+func Publish[T any](sender chan<- []byte, body T) error {
+	message := NewMessage(body)
 	data, err := Serialize(message)
 	if err != nil {
 		return err
