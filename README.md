@@ -35,7 +35,7 @@ Receiving and sending data utilizes Go channels, which work just as you expect t
 ```go
 data, ok := <- msgr.Receive("exchange", "consumer")
 if !ok {
-    // Channel is closed so no further data will arrive
+    // Channel is closed, so no further data will arrive
     return
 }
 fmt.Println(string(data))
