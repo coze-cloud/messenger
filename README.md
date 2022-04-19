@@ -33,7 +33,7 @@ Receiving and sending data utilizes Go channels, which work just as you expect t
 > The abstraction and thus the use of exchange and consumer in messenger is heavily inspired by the way messages are processed by RabbitMQ using the [Publish/Subscribe](https://www.rabbitmq.com/tutorials/tutorial-three-go.html) transport.
 
 ```go
-data, ok <- msgr.Receive("exchange", "consumer")
+data, ok := <- msgr.Receive("exchange", "consumer")
 if !ok {
     // Channel is closed so no further data will arrive
     return
