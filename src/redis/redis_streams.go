@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 	uuid "github.com/satori/go.uuid"
@@ -104,19 +103,21 @@ func (m *redisStreamMessenger) newReceiver(exchange string, name string) (chan [
 		for {
 			select {
 			case <-m.receiveCtx.Done():
+				close(receiver)
 				return
 			default:
 				streams, err := connection.XReadGroup(m.receiveCtx, &redis.XReadGroupArgs{
 					Streams:  []string{exchange, ">"},
 					Group:    name,
 					Consumer: uuid.NewV4().String(),
-					Block:    time.Second,
 				}).Result()
 				if err != nil {
 					switch err {
 					case redis.Nil:
 						continue
 					case context.Canceled:
+						continue
+					case context.DeadlineExceeded:
 						continue
 					default:
 						m.errors <- err
@@ -165,6 +166,8 @@ func (m *redisStreamMessenger) newSender(exchange string) (chan []byte, error) {
 				if err != nil {
 					switch err {
 					case context.Canceled:
+						continue
+					case context.DeadlineExceeded:
 						continue
 					default:
 						m.errors <- err
