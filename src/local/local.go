@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"sync"
 )
 
@@ -11,19 +12,26 @@ type localMessenger struct {
 	wg sync.WaitGroup
 	sync.Mutex
 
-	errors         chan error
-	doneSender     chan struct{}
-	doneReveciever chan struct{}
+	errors        chan error
+	receiveCtx    context.Context
+	receiveCancel context.CancelFunc
+	sendCtx       context.Context
+	sendCancel    context.CancelFunc
 }
 
-func NewLocalMessenger() *localMessenger {
+func NewLocalMessenger(ctx context.Context) *localMessenger {
+	receiveCtx, receiveCancel := context.WithCancel(ctx)
+	sendCtx, sendCancel := context.WithCancel(ctx)
+
 	return &localMessenger{
 		receiveChannels: make(map[string]map[string]chan []byte),
 		sendChannels:    make(map[string]chan []byte),
 
-		errors:         make(chan error),
-		doneSender:     make(chan struct{}),
-		doneReveciever: make(chan struct{}),
+		errors:        make(chan error),
+		receiveCtx:    receiveCtx,
+		receiveCancel: receiveCancel,
+		sendCtx:       sendCtx,
+		sendCancel:    sendCancel,
 	}
 }
 
@@ -72,15 +80,19 @@ func (m *localMessenger) Errors() <-chan error {
 }
 
 func (m *localMessenger) Stop() {
-	close(m.doneSender)
-	close(m.doneReveciever)
+	m.sendCancel()
+	m.receiveCancel()
 	m.wg.Wait()
 }
 
 func (m *localMessenger) newReceiver(exchange string, name string) (chan []byte, error) {
 	receiver := make(chan []byte, 1024)
 	m.wg.Add(1)
-	defer m.wg.Done()
+	go func() {
+		defer m.wg.Done()
+		<-m.receiveCtx.Done()
+		close(receiver)
+	}()
 	return receiver, nil
 }
 
@@ -95,7 +107,7 @@ func (m *localMessenger) newSender(exchange string) (chan []byte, error) {
 				for _, receiver := range m.receiveChannels[exchange] {
 					receiver <- message
 				}
-			case <-m.doneSender:
+			case <-m.sendCtx.Done():
 				return
 			}
 		}

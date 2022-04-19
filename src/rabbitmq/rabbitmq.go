@@ -1,6 +1,7 @@
 package rabbitmq
 
 import (
+	"context"
 	"sync"
 
 	"github.com/streadway/amqp"
@@ -13,21 +14,28 @@ type rabbitmqMessenger struct {
 	wg sync.WaitGroup
 	sync.Mutex
 
-	errors         chan error
-	doneSender     chan struct{}
-	doneReveciever chan struct{}
+	errors        chan error
+	receiveCtx    context.Context
+	receiveCancel context.CancelFunc
+	sendCtx       context.Context
+	sendCancel    context.CancelFunc
 
 	address string
 }
 
-func NewRabbitMesseger(address string) *rabbitmqMessenger {
+func NewRabbitMesseger(ctx context.Context, address string) *rabbitmqMessenger {
+	receiveCtx, receiveCancel := context.WithCancel(ctx)
+	sendCtx, sendCancel := context.WithCancel(ctx)
+
 	return &rabbitmqMessenger{
 		sendChannels:    make(map[string]chan []byte),
 		receiveChannels: make(map[string]chan []byte),
 
-		errors:         make(chan error),
-		doneSender:     make(chan struct{}),
-		doneReveciever: make(chan struct{}),
+		errors:        make(chan error),
+		receiveCtx:    receiveCtx,
+		receiveCancel: receiveCancel,
+		sendCtx:       sendCtx,
+		sendCancel:    sendCancel,
 
 		address: address,
 	}
@@ -74,8 +82,8 @@ func (m *rabbitmqMessenger) Errors() <-chan error {
 }
 
 func (m *rabbitmqMessenger) Stop() {
-	close(m.doneSender)
-	close(m.doneReveciever)
+	m.sendCancel()
+	m.receiveCancel()
 	m.wg.Wait()
 }
 
@@ -157,7 +165,8 @@ func (m *rabbitmqMessenger) newReceiver(exchange string, name string) (chan []by
 				if err := message.Ack(false); err != nil {
 					m.errors <- err
 				}
-			case <-m.doneReveciever:
+			case <-m.receiveCtx.Done():
+				close(receiver)
 				return
 			}
 		}
@@ -208,7 +217,7 @@ func (m *rabbitmqMessenger) newSender(exchange string) (chan []byte, error) {
 				); err != nil {
 					m.errors <- err
 				}
-			case <-m.doneSender:
+			case <-m.sendCtx.Done():
 				return
 			}
 		}

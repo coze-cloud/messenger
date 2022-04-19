@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	uuid "github.com/satori/go.uuid"
 )
 
 type redisStreamMessenger struct {
@@ -23,10 +24,9 @@ type redisStreamMessenger struct {
 	sendCancel    context.CancelFunc
 
 	address string
-	stream  string
 }
 
-func NewRedisStreamMessenger(ctx context.Context, address string, stream string) *redisStreamMessenger {
+func NewRedisStreamMessenger(ctx context.Context, address string) *redisStreamMessenger {
 	receiveCtx, receiveCancel := context.WithCancel(ctx)
 	sendCtx, sendCancel := context.WithCancel(ctx)
 
@@ -41,7 +41,6 @@ func NewRedisStreamMessenger(ctx context.Context, address string, stream string)
 		sendCancel:    sendCancel,
 
 		address: address,
-		stream:  stream,
 	}
 }
 
@@ -105,12 +104,12 @@ func (m *redisStreamMessenger) newReceiver(exchange string, name string) (chan [
 		return nil, err
 	}
 
-	receiveChannel := make(chan []byte)
+	receiver := make(chan []byte)
 	m.wg.Add(1)
 	go func() {
 		defer m.wg.Done()
 
-		connection.XGroupCreateMkStream(m.receiveCtx, m.stream, exchange, "0")
+		connection.XGroupCreateMkStream(m.receiveCtx, exchange, name, "$")
 
 		for {
 			select {
@@ -118,10 +117,9 @@ func (m *redisStreamMessenger) newReceiver(exchange string, name string) (chan [
 				return
 			default:
 				streams, err := connection.XReadGroup(m.receiveCtx, &redis.XReadGroupArgs{
-					Streams:  []string{m.stream, ">"},
-					Group:    exchange,
-					Consumer: name,
-					Count:    1,
+					Streams:  []string{exchange, ">"},
+					Group:    name,
+					Consumer: uuid.NewV4().String(),
 					Block:    time.Second,
 				}).Result()
 				if err != nil {
@@ -137,7 +135,7 @@ func (m *redisStreamMessenger) newReceiver(exchange string, name string) (chan [
 				}
 
 				for _, stream := range streams {
-					if stream.Stream != m.stream {
+					if stream.Stream != exchange {
 						continue
 					}
 
@@ -147,13 +145,13 @@ func (m *redisStreamMessenger) newReceiver(exchange string, name string) (chan [
 							m.errors <- fmt.Errorf("invalid message received: %v", message.Values)
 							continue
 						}
-						receiveChannel <- []byte(data)
+						receiver <- []byte(data)
 					}
 				}
 			}
 		}
 	}()
-	return receiveChannel, nil
+	return receiver, nil
 }
 
 func (m *redisStreamMessenger) newSender(exchange string) (chan []byte, error) {
@@ -167,13 +165,11 @@ func (m *redisStreamMessenger) newSender(exchange string) (chan []byte, error) {
 	go func() {
 		defer m.wg.Done()
 
-		connection.XGroupCreateMkStream(m.receiveCtx, m.stream, exchange, "0")
-
 		for {
 			select {
 			case message := <-sender:
 				_, err := connection.XAdd(m.sendCtx, &redis.XAddArgs{
-					Stream: m.stream,
+					Stream: exchange,
 					ID:     "*",
 					Values: map[string]interface{}{
 						"message": string(message),
