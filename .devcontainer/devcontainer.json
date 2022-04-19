@@ -9,7 +9,6 @@
 		"go.goroot": "/usr/local/go"
 	},
 	"extensions": [
-		"github.vscode-pull-request-github",
 		"github.copilot",
 		"golang.go"
 	],

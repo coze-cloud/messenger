@@ -1,6 +1,7 @@
 package rabbitmq
 
 import (
+	"context"
 	"sync"
 
 	"github.com/streadway/amqp"
@@ -10,32 +11,38 @@ type rabbitmqMessenger struct {
 	receiveChannels map[string]chan []byte
 	sendChannels    map[string]chan []byte
 
-	wg sync.WaitGroup
-	sync.Mutex
+	mutex sync.Mutex
 
-	errors         chan error
-	doneSender     chan struct{}
-	doneReveciever chan struct{}
+	errors        chan error
+	receiveCtx    context.Context
+	receiveCancel context.CancelFunc
+	sendCtx       context.Context
+	sendCancel    context.CancelFunc
 
 	address string
 }
 
-func NewRabbitMesseger(address string) *rabbitmqMessenger {
+func NewRabbitMesseger(ctx context.Context, address string) *rabbitmqMessenger {
+	receiveCtx, receiveCancel := context.WithCancel(ctx)
+	sendCtx, sendCancel := context.WithCancel(ctx)
+
 	return &rabbitmqMessenger{
 		sendChannels:    make(map[string]chan []byte),
 		receiveChannels: make(map[string]chan []byte),
 
-		errors:         make(chan error),
-		doneSender:     make(chan struct{}),
-		doneReveciever: make(chan struct{}),
+		errors:        make(chan error),
+		receiveCtx:    receiveCtx,
+		receiveCancel: receiveCancel,
+		sendCtx:       sendCtx,
+		sendCancel:    sendCancel,
 
 		address: address,
 	}
 }
 
 func (m *rabbitmqMessenger) Receive(exchange string, name string) <-chan []byte {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	receiveChannel, ok := m.receiveChannels[name]
 	if ok {
@@ -52,8 +59,8 @@ func (m *rabbitmqMessenger) Receive(exchange string, name string) <-chan []byte 
 }
 
 func (m *rabbitmqMessenger) Send(exchange string) chan<- []byte {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	sendChannel, ok := m.sendChannels[exchange]
 	if ok {
@@ -71,12 +78,6 @@ func (m *rabbitmqMessenger) Send(exchange string) chan<- []byte {
 
 func (m *rabbitmqMessenger) Errors() <-chan error {
 	return m.errors
-}
-
-func (m *rabbitmqMessenger) Stop() {
-	close(m.doneSender)
-	close(m.doneReveciever)
-	m.wg.Wait()
 }
 
 func (m *rabbitmqMessenger) newConnection() (*amqp.Connection, error) {
@@ -145,9 +146,7 @@ func (m *rabbitmqMessenger) newReceiver(exchange string, name string) (chan []by
 	}
 
 	receiver := make(chan []byte, 1024)
-	m.wg.Add(1)
 	go func() {
-		defer m.wg.Done()
 		defer channel.Close()
 
 		for {
@@ -157,7 +156,8 @@ func (m *rabbitmqMessenger) newReceiver(exchange string, name string) (chan []by
 				if err := message.Ack(false); err != nil {
 					m.errors <- err
 				}
-			case <-m.doneReveciever:
+			case <-m.receiveCtx.Done():
+				close(receiver)
 				return
 			}
 		}
@@ -189,9 +189,7 @@ func (m *rabbitmqMessenger) newSender(exchange string) (chan []byte, error) {
 	}
 
 	sender := make(chan []byte, 1024)
-	m.wg.Add(1)
 	go func() {
-		defer m.wg.Done()
 		defer channel.Close()
 
 		for {
@@ -208,7 +206,7 @@ func (m *rabbitmqMessenger) newSender(exchange string) (chan []byte, error) {
 				); err != nil {
 					m.errors <- err
 				}
-			case <-m.doneSender:
+			case <-m.sendCtx.Done():
 				return
 			}
 		}

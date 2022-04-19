@@ -5,6 +5,4 @@ type Messenger interface {
 	Send(exchange string) chan<- []byte
 
 	Errors() <-chan error
-
-	Stop()
 }

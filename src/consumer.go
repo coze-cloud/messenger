@@ -8,7 +8,10 @@ func Consume(ctx context.Context, receiver <-chan []byte, consumer Consumer) {
 	go func() {
 		for {
 			select {
-			case data := <-receiver:
+			case data, ok := <-receiver:
+				if !ok {
+					return
+				}
 				message, err := Deserialize(data)
 				if err != nil {
 					continue
