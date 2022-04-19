@@ -9,8 +9,7 @@ type localMessenger struct {
 	sendChannels    map[string]chan []byte
 	receiveChannels map[string]map[string]chan []byte
 
-	wg sync.WaitGroup
-	sync.Mutex
+	mutex sync.Mutex
 
 	errors        chan error
 	receiveCtx    context.Context
@@ -36,8 +35,8 @@ func NewLocalMessenger(ctx context.Context) *localMessenger {
 }
 
 func (m *localMessenger) Receive(exchange string, name string) <-chan []byte {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	if m.receiveChannels[exchange] == nil {
 		m.receiveChannels[exchange] = make(map[string]chan []byte)
@@ -58,8 +57,8 @@ func (m *localMessenger) Receive(exchange string, name string) <-chan []byte {
 }
 
 func (m *localMessenger) Send(exchange string) chan<- []byte {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	sendChannel, ok := m.sendChannels[exchange]
 	if ok {
@@ -79,17 +78,9 @@ func (m *localMessenger) Errors() <-chan error {
 	return m.errors
 }
 
-func (m *localMessenger) Stop() {
-	m.sendCancel()
-	m.receiveCancel()
-	m.wg.Wait()
-}
-
 func (m *localMessenger) newReceiver(exchange string, name string) (chan []byte, error) {
 	receiver := make(chan []byte, 1024)
-	m.wg.Add(1)
 	go func() {
-		defer m.wg.Done()
 		<-m.receiveCtx.Done()
 		close(receiver)
 	}()
@@ -98,9 +89,7 @@ func (m *localMessenger) newReceiver(exchange string, name string) (chan []byte,
 
 func (m *localMessenger) newSender(exchange string) (chan []byte, error) {
 	sender := make(chan []byte, 1024)
-	m.wg.Add(1)
 	go func() {
-		defer m.wg.Done()
 		for {
 			select {
 			case message := <-sender:

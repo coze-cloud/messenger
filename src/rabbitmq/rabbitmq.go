@@ -11,8 +11,7 @@ type rabbitmqMessenger struct {
 	receiveChannels map[string]chan []byte
 	sendChannels    map[string]chan []byte
 
-	wg sync.WaitGroup
-	sync.Mutex
+	mutex sync.Mutex
 
 	errors        chan error
 	receiveCtx    context.Context
@@ -42,8 +41,8 @@ func NewRabbitMesseger(ctx context.Context, address string) *rabbitmqMessenger {
 }
 
 func (m *rabbitmqMessenger) Receive(exchange string, name string) <-chan []byte {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	receiveChannel, ok := m.receiveChannels[name]
 	if ok {
@@ -60,8 +59,8 @@ func (m *rabbitmqMessenger) Receive(exchange string, name string) <-chan []byte 
 }
 
 func (m *rabbitmqMessenger) Send(exchange string) chan<- []byte {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	sendChannel, ok := m.sendChannels[exchange]
 	if ok {
@@ -79,12 +78,6 @@ func (m *rabbitmqMessenger) Send(exchange string) chan<- []byte {
 
 func (m *rabbitmqMessenger) Errors() <-chan error {
 	return m.errors
-}
-
-func (m *rabbitmqMessenger) Stop() {
-	m.sendCancel()
-	m.receiveCancel()
-	m.wg.Wait()
 }
 
 func (m *rabbitmqMessenger) newConnection() (*amqp.Connection, error) {
@@ -153,9 +146,7 @@ func (m *rabbitmqMessenger) newReceiver(exchange string, name string) (chan []by
 	}
 
 	receiver := make(chan []byte, 1024)
-	m.wg.Add(1)
 	go func() {
-		defer m.wg.Done()
 		defer channel.Close()
 
 		for {
@@ -198,9 +189,7 @@ func (m *rabbitmqMessenger) newSender(exchange string) (chan []byte, error) {
 	}
 
 	sender := make(chan []byte, 1024)
-	m.wg.Add(1)
 	go func() {
-		defer m.wg.Done()
 		defer channel.Close()
 
 		for {

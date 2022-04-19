@@ -14,8 +14,7 @@ type redisStreamMessenger struct {
 	receiveChannels map[string]chan []byte
 	sendChannels    map[string]chan []byte
 
-	wg sync.WaitGroup
-	sync.Mutex
+	mutex sync.Mutex
 
 	errors        chan error
 	receiveCtx    context.Context
@@ -45,8 +44,8 @@ func NewRedisStreamMessenger(ctx context.Context, address string) *redisStreamMe
 }
 
 func (m *redisStreamMessenger) Receive(exchange string, name string) <-chan []byte {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	receiveChannel, ok := m.receiveChannels[name]
 	if ok {
@@ -63,8 +62,8 @@ func (m *redisStreamMessenger) Receive(exchange string, name string) <-chan []by
 }
 
 func (m *redisStreamMessenger) Send(exchange string) chan<- []byte {
-	m.Lock()
-	defer m.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	sendChannel, ok := m.sendChannels[exchange]
 	if ok {
@@ -84,12 +83,6 @@ func (m *redisStreamMessenger) Errors() <-chan error {
 	return m.errors
 }
 
-func (m *redisStreamMessenger) Stop() {
-	m.sendCancel()
-	m.receiveCancel()
-	m.wg.Wait()
-}
-
 func (m *redisStreamMessenger) newConnection() (*redis.Client, error) {
 	opt, err := redis.ParseURL(m.address)
 	if err != nil {
@@ -105,10 +98,7 @@ func (m *redisStreamMessenger) newReceiver(exchange string, name string) (chan [
 	}
 
 	receiver := make(chan []byte)
-	m.wg.Add(1)
 	go func() {
-		defer m.wg.Done()
-
 		connection.XGroupCreateMkStream(m.receiveCtx, exchange, name, "$")
 
 		for {
@@ -161,10 +151,7 @@ func (m *redisStreamMessenger) newSender(exchange string) (chan []byte, error) {
 	}
 
 	sender := make(chan []byte, 1024)
-	m.wg.Add(1)
 	go func() {
-		defer m.wg.Done()
-
 		for {
 			select {
 			case message := <-sender:
